@@ -19,29 +19,47 @@ export async function getProfile() {
 }
 
 export async function completeOnboarding(formData: FormData) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: 'Not authenticated' }
-
-  const concerns = formData.getAll('concerns') as string[]
-  const preferences = {
-    favorite_categories: formData.getAll('categories') as string[],
+  // If no Supabase URL is set, bypass the database logic so the UI can still be tested
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
+    console.log("No Supabase URL configured. Bypassing database update and mocking onboarding success.");
+    redirect('/home');
   }
 
-  const { error } = await supabase
-    .from('profiles')
-    .update({
-      city: formData.get('city') as string,
-      area: formData.get('area') as string,
-      skin_type: formData.get('skinType') as string,
-      hair_type: formData.get('hairType') as string,
-      concerns,
-      preferences,
-      onboarding_complete: true,
-    })
-    .eq('id', user.id)
+  let errorMsg = null;
 
-  if (error) return { error: error.message }
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { error: 'Not authenticated' }
+
+    const concerns = formData.getAll('concerns') as string[]
+    const preferences = {
+      favorite_categories: formData.getAll('categories') as string[],
+    }
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        city: formData.get('city') as string,
+        area: formData.get('area') as string,
+        skin_type: formData.get('skinType') as string,
+        hair_type: formData.get('hairType') as string,
+        concerns,
+        preferences,
+        onboarding_complete: true,
+      })
+      .eq('id', user.id)
+
+    if (error) {
+      errorMsg = error.message;
+    }
+  } catch (err: any) {
+    console.error("completeOnboarding exception:", err);
+    errorMsg = err.message || "Unknown error occurred";
+  }
+
+  if (errorMsg) return { error: errorMsg };
+
   revalidatePath('/home')
   redirect('/home')
 }
