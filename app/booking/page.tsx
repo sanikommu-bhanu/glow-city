@@ -1,24 +1,17 @@
 'use client'
-import { useEffect, useState, useCallback, Suspense } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowLeft, Calendar, Clock, CreditCard, Sparkles } from 'lucide-react'
 import { toast } from 'sonner'
-import { getSalonBySlug } from '@/lib/actions/salons'
-import { createBooking, getBookedSlots } from '@/lib/actions/bookings'
-import { getProfile } from '@/lib/actions/profile'
-import { generateTimeSlots } from '@/lib/utils'
 import { formatPrice } from '@/lib/types'
 import { Button } from '@/components/ui/Button'
 import BookingStepBar from '@/components/BookingStepBar'
-import type { Salon, Service, Stylist } from '@/lib/types'
-
-declare global {
-  interface Window {
-    Razorpay: new (options: Record<string, unknown>) => { open: () => void }
-  }
-}
+import { SALONS, SERVICES, STYLISTS } from '@/lib/data'
+import { slugify } from '@/lib/utils'
+import { useStore } from '@/store/useStore'
+import type { Service, Stylist } from '@/lib/types'
 
 function BookingFlow() {
   const searchParams = useSearchParams()
@@ -27,7 +20,7 @@ function BookingFlow() {
   const preselectedService = searchParams.get('service')
 
   const [step, setStep] = useState(preselectedService ? 2 : 1)
-  const [salon, setSalon] = useState<Salon | null>(null)
+  const [salon, setSalon] = useState<any>(null)
   const [services, setServices] = useState<Service[]>([])
   const [stylists, setStylists] = useState<Stylist[]>([])
   const [selectedService, setSelectedService] = useState<Service | null>(null)
@@ -36,113 +29,70 @@ function BookingFlow() {
   const [time, setTime] = useState('')
   const [slots, setSlots] = useState<string[]>([])
   const [loyaltyRedeem, setLoyaltyRedeem] = useState(0)
-  const [profile, setProfile] = useState<Awaited<ReturnType<typeof getProfile>>>(null)
   const [loading, setLoading] = useState(false)
-  const [bookingId, setBookingId] = useState<string | null>(null)
+  const { user, setBooking } = useStore()
 
   useEffect(() => {
     if (!salonSlug) return
-    getSalonBySlug(salonSlug).then((data) => {
-      if (!data) return
-      setSalon(data.salon)
-      setServices(data.services)
-      setStylists(data.stylists)
-      if (preselectedService) {
-        const svc = data.services.find((s) => s.id === preselectedService)
-        if (svc) setSelectedService(svc)
-      }
-    })
-    getProfile().then(setProfile)
+    const localSalon = SALONS.find(s => slugify(s.name) === salonSlug)
+    if (!localSalon) return
+
+    const mappedSalon = {
+      id: localSalon.id.toString(),
+      name: localSalon.name,
+      slug: slugify(localSalon.name),
+      area: localSalon.area,
+      cover_image_url: localSalon.image,
+    }
+    setSalon(mappedSalon)
+
+    const mappedServices = SERVICES.map(s => ({
+      id: s.id.toString(),
+      name: s.name,
+      duration_minutes: parseInt(s.duration) || 60,
+      price: s.price,
+      category: s.category,
+      icon: s.icon,
+    }))
+    setServices(mappedServices as any)
+
+    const mappedStylists = STYLISTS.map(s => ({
+      id: s.id.toString(),
+      name: s.name,
+      role: s.role,
+      avatar_url: s.img,
+    }))
+    setStylists(mappedStylists as any)
+
+    if (preselectedService) {
+      const svc = mappedServices.find((s) => s.id === preselectedService)
+      if (svc) setSelectedService(svc as any)
+    }
   }, [salonSlug, preselectedService])
 
   useEffect(() => {
     if (!selectedStylist || !date || !selectedService || !salon) return
-    getBookedSlots(selectedStylist.id, date).then((booked) => {
-      setSlots(generateTimeSlots(salon.hours ?? {}, date, selectedService.duration_minutes, booked))
-    })
+    // Mock slots
+    setSlots(['10:00 AM', '11:30 AM', '02:00 PM', '04:15 PM', '06:00 PM'])
   }, [selectedStylist, date, selectedService, salon])
-
-  const loadRazorpay = useCallback(() => {
-    return new Promise<boolean>((resolve) => {
-      if (window.Razorpay) { resolve(true); return }
-      const script = document.createElement('script')
-      script.src = 'https://checkout.razorpay.com/v1/checkout.js'
-      script.onload = () => resolve(true)
-      script.onerror = () => resolve(false)
-      document.body.appendChild(script)
-    })
-  }, [])
 
   async function handlePayment() {
     if (!selectedService || !selectedStylist || !date || !time || !salon) return
     setLoading(true)
 
-    const result = await createBooking({
-      salonId: salon.id,
-      serviceId: selectedService.id,
-      stylistId: selectedStylist.id,
-      date,
-      time,
-      loyaltyPointsToRedeem: loyaltyRedeem,
-    })
-
-    if (result.error || !result.booking) {
-      toast.error(result.error ?? 'Booking failed')
+    // Simulate payment & booking logic locally
+    setTimeout(() => {
+      setBooking({
+        salon,
+        service: selectedService,
+        stylist: selectedStylist,
+        date,
+        time,
+      })
+      toast.success('Payment successful! Booking confirmed.')
       setLoading(false)
-      return
-    }
-
-    setBookingId(result.booking.id)
-
-    const loaded = await loadRazorpay()
-    if (!loaded) {
-      toast.error('Could not load payment gateway')
-      setLoading(false)
-      return
-    }
-
-    const orderRes = await fetch('/api/payments/razorpay', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ bookingId: result.booking.id }),
-    })
-    const orderData = await orderRes.json()
-
-    if (orderData.error) {
-      toast.error(orderData.error)
-      setLoading(false)
-      return
-    }
-
-    const rzp = new window.Razorpay({
-      key: orderData.key,
-      amount: orderData.amount,
-      currency: orderData.currency,
-      name: 'GlowCity AI',
-      description: `${selectedService.name} at ${salon.name}`,
-      order_id: orderData.orderId,
-      handler: async (response: { razorpay_payment_id: string; razorpay_order_id: string; razorpay_signature: string }) => {
-        const verify = await fetch('/api/payments/razorpay', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            ...response,
-            bookingId: result.booking!.id,
-          }),
-        })
-        const verifyData = await verify.json()
-        if (verifyData.success) {
-          toast.success(`Booked! +${verifyData.pointsEarned} loyalty points earned`)
-          router.push(`/booking/confirm?id=${result.booking!.id}`)
-        } else {
-          toast.error('Payment verification failed')
-        }
-      },
-      prefill: { email: profile?.full_name ? undefined : undefined },
-      theme: { color: '#B76E79' },
-    })
-    rzp.open()
-    setLoading(false)
+      router.push(`/booking/confirm`)
+    }, 1500)
   }
 
   const platformFee = selectedService ? Math.round(selectedService.price * 0.05) : 0
@@ -196,8 +146,10 @@ function BookingFlow() {
                 className="w-full flex items-center justify-between p-4 bg-white rounded-[14px] border border-border hover:border-rose-gold/40 text-left transition-all"
               >
                 <div>
-                  <div className="font-dm font-semibold text-sm">{svc.name}</div>
-                  <div className="font-dm text-xs text-text-muted">{svc.duration_minutes} min</div>
+                  <div className="font-dm font-semibold text-sm flex items-center gap-2">
+                    <span className="text-xl">{svc.icon}</span> {svc.name}
+                  </div>
+                  <div className="font-dm text-xs text-text-muted ml-8">{svc.duration_minutes} min</div>
                 </div>
                 <span className="font-cormorant font-bold text-rose-gold">{formatPrice(svc.price)}</span>
               </button>
@@ -207,7 +159,8 @@ function BookingFlow() {
 
         {step === 2 && selectedService && (
           <div className="space-y-6 animate-fade-up">
-            <div className="p-3 bg-soft-pink/50 rounded-xl font-dm text-sm">
+            <div className="p-3 bg-soft-pink/50 rounded-xl font-dm text-sm flex items-center gap-2">
+              <span className="text-xl">{selectedService.icon}</span>
               {selectedService.name} · {formatPrice(selectedService.price)}
             </div>
 
@@ -220,7 +173,7 @@ function BookingFlow() {
                 min={minDate}
                 value={date}
                 onChange={(e) => { setDate(e.target.value); setTime('') }}
-                className="w-full rounded-[14px] border border-border px-4 py-3 font-dm text-sm"
+                className="w-full rounded-[14px] border border-border px-4 py-3 font-dm text-sm outline-none focus:border-rose-gold"
               />
             </div>
 
@@ -232,7 +185,7 @@ function BookingFlow() {
                     key={st.id}
                     type="button"
                     onClick={() => setSelectedStylist(st)}
-                    className={`p-3 rounded-xl border text-left font-dm text-sm transition-all ${selectedStylist?.id === st.id ? 'border-rose-gold bg-rose-gold/8' : 'border-border'}`}
+                    className={`p-3 rounded-xl border text-left font-dm text-sm transition-all ${selectedStylist?.id === st.id ? 'border-rose-gold bg-rose-gold/8' : 'border-border bg-white hover:border-rose-gold/40'}`}
                   >
                     <div className="font-semibold">{st.name}</div>
                     <div className="text-xs text-text-muted">{st.role}</div>
@@ -242,7 +195,7 @@ function BookingFlow() {
             </div>
 
             {date && selectedStylist && (
-              <div>
+              <div className="animate-fade-up">
                 <h2 className="font-cormorant text-xl mb-3 flex items-center gap-2">
                   <Clock className="w-5 h-5 text-rose-gold" /> Time slot
                 </h2>
@@ -255,7 +208,7 @@ function BookingFlow() {
                         key={s}
                         type="button"
                         onClick={() => setTime(s)}
-                        className={`py-2 rounded-xl border text-xs font-dm font-medium ${time === s ? 'pill-active' : 'border-border'}`}
+                        className={`py-2 rounded-xl border text-xs font-dm font-medium transition-all ${time === s ? 'pill-active' : 'border-border bg-white hover:border-rose-gold/40'}`}
                       >
                         {s}
                       </button>
@@ -292,17 +245,17 @@ function BookingFlow() {
               </div>
             </div>
 
-            {profile && profile.loyalty_points > 0 && (
+            {user && user.points > 0 && (
               <div className="p-4 bg-gradient-dark rounded-[16px] text-white">
                 <div className="flex items-center gap-2 mb-2">
                   <Sparkles className="w-4 h-4 text-champagne" />
                   <span className="font-dm text-sm">Redeem loyalty points</span>
                 </div>
-                <p className="font-dm text-xs text-white/60 mb-3">{profile.loyalty_points} points available (max {Math.min(profile.loyalty_points, Math.floor(selectedService.price * 0.2))})</p>
+                <p className="font-dm text-xs text-white/60 mb-3">{user.points} points available (max {Math.min(user.points, Math.floor(selectedService.price * 0.2))})</p>
                 <input
                   type="range"
                   min={0}
-                  max={Math.min(profile.loyalty_points, Math.floor(selectedService.price * 0.2))}
+                  max={Math.min(user.points, Math.floor(selectedService.price * 0.2))}
                   value={loyaltyRedeem}
                   onChange={(e) => setLoyaltyRedeem(Number(e.target.value))}
                   className="w-full"
@@ -312,9 +265,8 @@ function BookingFlow() {
             )}
 
             <Button className="w-full" size="lg" loading={loading} onClick={handlePayment}>
-              Pay with Razorpay
+              Pay & Confirm Booking
             </Button>
-            <p className="font-dm text-[10px] text-center text-text-muted">Test mode · Use Razorpay test cards</p>
           </div>
         )}
       </div>

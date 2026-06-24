@@ -1,94 +1,66 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { Search, SlidersHorizontal, Sparkles, TrendingUp, MapPin, ChevronRight, Scissors, Palette, Flower2, Gem, Leaf, Crown } from 'lucide-react'
 import SalonCard, { RecommendedSalonCard } from '@/components/SalonCard'
 import { PageHeader } from '@/components/AppShell'
-import { HomePageSkeleton } from '@/components/ui/Skeleton'
-import { getSalons, getTrendingServices } from '@/lib/actions/salons'
-import { getRecommendations } from '@/lib/actions/recommendations'
-import { getProfile } from '@/lib/actions/profile'
-import { CATEGORIES, formatPrice } from '@/lib/types'
-import type { Salon, SalonRecommendation } from '@/lib/types'
+import { CATEGORIES } from '@/lib/types'
+import { SALONS, SERVICES } from '@/lib/data'
+import { slugify } from '@/lib/utils'
+import { formatPrice } from '@/lib/types'
 import { cn } from '@/lib/cn'
 
 const CATEGORY_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   Sparkles, Scissors, Palette, Flower2, Gem, Leaf, Crown,
 }
 
+// Map local SALONS to match the expected Salon type in SalonCard
+export const mappedSalons = SALONS.map(s => ({
+  id: s.id.toString(),
+  name: s.name,
+  slug: slugify(s.name),
+  area: s.area,
+  city: s.city,
+  cover_image_url: s.image,
+  rating: s.rating,
+  review_count: s.reviews,
+  price_range_min: s.priceNum,
+  verified: true,
+  category: [s.category.split(' & ')[0], s.category.split(' & ')[1]].filter(Boolean),
+  about: s.about,
+  distance_km: Number((Math.random() * 5 + 0.5).toFixed(1)),
+  gallery_urls: s.images,
+  amenities: s.amenities,
+  phone: s.phone,
+  address: s.address,
+  hours: s.hours,
+  status: 'approved' as const,
+})) as any[]
+
 export default function HomePage() {
   const [activeTag, setActiveTag] = useState('All')
-  const [profile, setProfile] = useState<Awaited<ReturnType<typeof getProfile>>>(null)
-  const [recommendations, setRecommendations] = useState<SalonRecommendation[]>([])
-  const [salons, setSalons] = useState<Salon[]>([])
-  const [nearby, setNearby] = useState<Salon[]>([])
-  const [trending, setTrending] = useState<Awaited<ReturnType<typeof getTrendingServices>>>([])
-  const [loading, setLoading] = useState(true)
-  const [geo, setGeo] = useState<{ lat: number; lng: number } | null>(null)
-
-  useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => setGeo({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-        () => setGeo({ lat: 19.076, lng: 72.877 })
-      )
-    } else {
-      setGeo({ lat: 19.076, lng: 72.877 })
-    }
-  }, [])
-
-  useEffect(() => {
-    async function load() {
-      try {
-        const [prof, recs, allSalons, trend] = await Promise.all([
-          getProfile(),
-          getRecommendations(),
-          getSalons({ city: 'Mumbai' }),
-          getTrendingServices('Mumbai'),
-        ])
-        setProfile(prof)
-        setRecommendations(recs)
-        setSalons(allSalons.slice(0, 8))
-        setTrending(trend)
-      } catch {
-        // Supabase not configured yet
-      } finally {
-        setLoading(false)
-      }
-    }
-    load()
-  }, [])
-
-  useEffect(() => {
-    if (!geo) return
-    getSalons({ city: profile?.city ?? 'Mumbai', lat: geo.lat, lng: geo.lng })
-      .then(setNearby)
-      .catch(() => {})
-  }, [geo, profile?.city])
 
   const filteredSalons =
     activeTag === 'All'
-      ? salons
-      : salons.filter((s) => s.category.includes(activeTag))
+      ? mappedSalons
+      : mappedSalons.filter((s) => s.category.includes(activeTag) || activeTag === 'All')
 
-  const avatarInitial = profile?.full_name?.[0]?.toUpperCase() ?? 'G'
+  // Mock recommendations
+  const recommendations = [
+    { salon: mappedSalons[0], matchPercent: 98, reason: 'Matches your hair type & favorite stylist', source: 'activity' as const },
+    { salon: mappedSalons[1], matchPercent: 95, reason: 'Highly rated for Spa near you', source: 'trending' as const },
+  ]
 
-  if (loading) {
-    return (
-      <div className="hero-gradient min-h-screen">
-        <PageHeader city={profile?.city} area={profile?.area} avatarInitial={avatarInitial} />
-        <HomePageSkeleton />
-      </div>
-    )
-  }
+  // Mock trending services from local SERVICES
+  const trendingServices = SERVICES.filter(s => s.popular).map(s => ({
+    ...s,
+    image_url: mappedSalons.find(ms => ms.category.includes(s.category))?.cover_image_url || mappedSalons[0].cover_image_url,
+    salon: mappedSalons[Math.floor(Math.random() * mappedSalons.length)]
+  }))
 
   return (
     <div className="hero-gradient min-h-screen pb-8">
-      <PageHeader
-        city={profile?.city ?? 'Mumbai'}
-        area={profile?.area}
-        avatarInitial={avatarInitial}
-      />
+      <PageHeader city="Mumbai" area="Bandra West" avatarInitial="B" />
 
       <div className="max-w-7xl mx-auto px-4 md:px-8">
         {/* Search */}
@@ -126,37 +98,104 @@ export default function HomePage() {
         </div>
 
         {/* AI Recommendations */}
-        {recommendations.length > 0 && (
-          <section className="mb-8">
-            <div className="flex items-end justify-between mb-4">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <Sparkles className="w-4 h-4 text-rose-gold" />
-                  <span className="font-dm text-[10px] font-bold tracking-[0.12em] uppercase text-rose-gold">
-                    AI Recommended For You
-                  </span>
-                </div>
-                <h2 className="font-cormorant font-semibold text-2xl md:text-3xl text-luxury-black">
-                  Your perfect matches
-                </h2>
+        <section className="mb-8">
+          <div className="flex items-end justify-between mb-4">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <Sparkles className="w-4 h-4 text-rose-gold" />
+                <span className="font-dm text-[10px] font-bold tracking-[0.12em] uppercase text-rose-gold">
+                  AI Recommended For You
+                </span>
               </div>
-              <Link href="/ai" className="font-dm text-sm text-rose-gold font-medium flex items-center gap-1 hover:gap-2 transition-all">
-                Ask GlowAI <ChevronRight className="w-4 h-4" />
+              <h2 className="font-cormorant font-semibold text-2xl md:text-3xl text-luxury-black">
+                Your perfect matches
+              </h2>
+            </div>
+            <Link href="/ai" className="font-dm text-sm text-rose-gold font-medium flex items-center gap-1 hover:gap-2 transition-all">
+              Ask GlowAI <ChevronRight className="w-4 h-4" />
+            </Link>
+          </div>
+          <div className="flex gap-4 overflow-x-auto no-scroll pb-2 -mx-4 px-4 md:mx-0 md:px-0">
+            {recommendations.map((rec) => (
+              <RecommendedSalonCard
+                key={rec.salon.id}
+                salon={rec.salon}
+                matchPercent={rec.matchPercent}
+                reason={rec.reason}
+                source={rec.source}
+              />
+            ))}
+          </div>
+        </section>
+
+        {/* All Salons (Vertical Grid instead of horizontal) */}
+        <section className="mb-8">
+          <div className="flex items-baseline justify-between mb-4">
+            <h2 className="font-cormorant font-semibold text-2xl md:text-3xl text-luxury-black">
+              {activeTag === 'All' ? 'All Salons' : `${activeTag} Salons`}
+            </h2>
+            <span className="font-dm text-sm text-text-muted font-medium">{filteredSalons.length} found</span>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {filteredSalons.map((s) => (
+              <SalonCard key={s.id} salon={s} wide />
+            ))}
+            {filteredSalons.length === 0 && (
+              <p className="font-dm text-text-muted col-span-full py-8 text-center">No salons found for this category.</p>
+            )}
+          </div>
+        </section>
+
+        {/* Trending */}
+        <section className="mb-8">
+          <div className="flex items-baseline justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-champagne" />
+              <h2 className="font-cormorant font-semibold text-2xl md:text-3xl text-luxury-black">Trending</h2>
+            </div>
+            <Link href="/discover" className="font-dm text-sm text-rose-gold font-medium">View all</Link>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+            {trendingServices.slice(0, 4).map((svc) => (
+              <Link
+                key={svc.id}
+                href={`/salon/${svc.salon?.slug || mappedSalons[0].slug}`}
+                className="hover-lift bg-white rounded-[18px] overflow-hidden shadow-card group"
+              >
+                <div className="relative h-24 md:h-28 overflow-hidden">
+                  <img
+                    src={svc.image_url}
+                    alt={svc.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-luxury-black/55 to-transparent" />
+                  <div className="absolute bottom-2 left-2.5 font-cormorant text-sm font-semibold text-white">{svc.name}</div>
+                </div>
+                <div className="px-3 py-2 flex justify-between items-center">
+                  <span className="font-dm text-[10px] text-text-muted uppercase tracking-wide">From</span>
+                  <span className="font-cormorant font-bold text-rose-gold text-[15px]">{formatPrice(svc.price)}</span>
+                </div>
               </Link>
+            ))}
+          </div>
+        </section>
+
+        {/* Near You */}
+        <section className="mb-8">
+          <div className="flex items-baseline justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <MapPin className="w-5 h-5 text-rose-gold" />
+              <h2 className="font-cormorant font-semibold text-2xl md:text-3xl text-luxury-black">Near You</h2>
             </div>
-            <div className="flex gap-4 overflow-x-auto no-scroll pb-2 -mx-4 px-4 md:mx-0 md:px-0">
-              {recommendations.map((rec) => (
-                <RecommendedSalonCard
-                  key={rec.salon.id}
-                  salon={rec.salon}
-                  matchPercent={rec.matchPercent}
-                  reason={rec.reason}
-                  source={rec.source}
-                />
-              ))}
-            </div>
-          </section>
-        )}
+            <Link href="/search?sort=distance" className="font-dm text-sm text-rose-gold font-medium">Map view</Link>
+          </div>
+          <div className="bg-white rounded-[20px] shadow-card border border-border/50 overflow-hidden">
+            {[...mappedSalons].sort((a,b) => a.distance_km - b.distance_km).slice(0, 4).map((s) => (
+              <SalonCard key={s.id} salon={s} compact />
+            ))}
+          </div>
+        </section>
 
         {/* GlowAI Banner */}
         <Link href="/ai" className="block mb-8">
@@ -182,99 +221,30 @@ export default function HomePage() {
           </div>
         </Link>
 
-        {/* Featured */}
-        <section className="mb-8">
-          <div className="flex items-baseline justify-between mb-4">
-            <h2 className="font-cormorant font-semibold text-2xl md:text-3xl text-luxury-black">Featured Salons</h2>
-            <Link href="/search" className="font-dm text-sm text-rose-gold font-medium">See all</Link>
-          </div>
-          <div className="flex gap-4 overflow-x-auto no-scroll pb-2 -mx-4 px-4 md:mx-0 md:px-0">
-            {filteredSalons.map((s) => (
-              <SalonCard key={s.id} salon={s} />
-            ))}
-          </div>
-        </section>
-
-        {/* Trending */}
-        {trending.length > 0 && (
-          <section className="mb-8">
-            <div className="flex items-baseline justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-champagne" />
-                <h2 className="font-cormorant font-semibold text-2xl md:text-3xl text-luxury-black">Trending</h2>
-              </div>
-              <Link href="/discover" className="font-dm text-sm text-rose-gold font-medium">View all</Link>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-              {trending.slice(0, 4).map((svc) => (
-                <Link
-                  key={svc.id}
-                  href={`/salon/${(svc.salon as { slug?: string })?.slug}`}
-                  className="hover-lift bg-white rounded-[18px] overflow-hidden shadow-card group"
-                >
-                  <div className="relative h-24 md:h-28 overflow-hidden">
-                    <img
-                      src={svc.image_url ?? ''}
-                      alt={svc.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-luxury-black/55 to-transparent" />
-                    <div className="absolute bottom-2 left-2.5 font-cormorant text-sm font-semibold text-white">{svc.name}</div>
-                  </div>
-                  <div className="px-3 py-2 flex justify-between items-center">
-                    <span className="font-dm text-[10px] text-text-muted uppercase tracking-wide">From</span>
-                    <span className="font-cormorant font-bold text-rose-gold text-[15px]">{formatPrice(svc.price)}</span>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Near You */}
-        {nearby.length > 0 && (
-          <section className="mb-8">
-            <div className="flex items-baseline justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <MapPin className="w-5 h-5 text-rose-gold" />
-                <h2 className="font-cormorant font-semibold text-2xl md:text-3xl text-luxury-black">Near You</h2>
-              </div>
-              <Link href="/search?sort=distance" className="font-dm text-sm text-rose-gold font-medium">Map view</Link>
-            </div>
-            <div className="bg-white rounded-[20px] shadow-card border border-border/50 overflow-hidden">
-              {nearby.slice(0, 5).map((s) => (
-                <SalonCard key={s.id} salon={s} compact />
-              ))}
-            </div>
-          </section>
-        )}
-
         {/* Loyalty */}
-        {profile && (
-          <Link href="/loyalty" className="block">
-            <div className="rounded-[20px] p-5 md:p-6 bg-gradient-dark shadow-luxury relative overflow-hidden">
-              <div className="absolute right-[-20px] top-[-20px] w-36 h-36 rounded-full bg-white/5" />
-              <div className="relative flex items-center justify-between">
-                <div>
-                  <div className="font-dm text-[10px] font-bold tracking-[0.14em] uppercase text-champagne mb-1.5">
-                    Glow Rewards
-                  </div>
-                  <div className="font-cormorant font-semibold text-2xl text-white">
-                    {profile.loyalty_points.toLocaleString('en-IN')} Points
-                  </div>
-                  <div className="font-dm text-sm mt-1 text-white/50">
-                    {formatPrice(Math.floor(profile.loyalty_points / 10))} cashback available
-                  </div>
+        <Link href="/loyalty" className="block">
+          <div className="rounded-[20px] p-5 md:p-6 bg-gradient-dark shadow-luxury relative overflow-hidden">
+            <div className="absolute right-[-20px] top-[-20px] w-36 h-36 rounded-full bg-white/5" />
+            <div className="relative flex items-center justify-between">
+              <div>
+                <div className="font-dm text-[10px] font-bold tracking-[0.14em] uppercase text-champagne mb-1.5">
+                  Glow Rewards
                 </div>
-                <div className="text-right">
-                  <div className="font-dm text-[10px] font-bold tracking-[0.08em] text-champagne uppercase">
-                    {profile.loyalty_tier} tier
-                  </div>
+                <div className="font-cormorant font-semibold text-2xl text-white">
+                  2,450 Points
+                </div>
+                <div className="font-dm text-sm mt-1 text-white/50">
+                  {formatPrice(245)} cashback available
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="font-dm text-[10px] font-bold tracking-[0.08em] text-champagne uppercase">
+                  Gold tier
                 </div>
               </div>
             </div>
-          </Link>
-        )}
+          </div>
+        </Link>
       </div>
     </div>
   )

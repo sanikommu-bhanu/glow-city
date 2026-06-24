@@ -2,18 +2,70 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowLeft, MapPin, Star, Clock, Phone, CheckCircle2 } from 'lucide-react'
-import { getSalonBySlug } from '@/lib/actions/salons'
 import { formatPrice } from '@/lib/types'
-import { isSalonOpenNow } from '@/lib/utils'
+import { isSalonOpenNow, slugify } from '@/lib/utils'
 import { Button } from '@/components/ui/Button'
 import SalonTabs from '@/components/salon/SalonTabs'
+import { SALONS, SERVICES, STYLISTS, REVIEWS } from '@/lib/data'
 
 export default async function SalonPage({ params }: { params: { slug: string } }) {
-  const data = await getSalonBySlug(params.slug)
-  if (!data) notFound()
+  const localSalon = SALONS.find(s => slugify(s.name) === params.slug)
+  if (!localSalon) notFound()
 
-  const { salon, services, stylists, reviews } = data
-  const openNow = isSalonOpenNow(salon.hours ?? {})
+  // Map to expected structure
+  const salon = {
+    id: localSalon.id.toString(),
+    name: localSalon.name,
+    slug: slugify(localSalon.name),
+    area: localSalon.area,
+    city: localSalon.city,
+    cover_image_url: localSalon.image,
+    rating: localSalon.rating,
+    review_count: localSalon.reviews,
+    price_range_min: localSalon.priceNum,
+    category: [localSalon.category.split(' & ')[0], localSalon.category.split(' & ')[1]].filter(Boolean),
+    about: localSalon.about,
+    amenities: localSalon.amenities,
+    phone: localSalon.phone,
+    address: localSalon.address,
+    hours: localSalon.hours,
+    gallery_urls: localSalon.images,
+  }
+
+  const services = SERVICES.map(s => ({
+    id: s.id.toString(),
+    salon_id: salon.id,
+    name: s.name,
+    duration_minutes: parseInt(s.duration) || 60,
+    price: s.price,
+    category: s.category,
+    description: s.description,
+  }))
+
+  const stylists = STYLISTS.map(s => ({
+    id: s.id.toString(),
+    salon_id: salon.id,
+    name: s.name,
+    role: s.role,
+    avatar_url: s.img,
+    rating: s.rating,
+    review_count: s.reviews,
+    specialties: [s.speciality]
+  }))
+
+  const reviews = REVIEWS.map(r => ({
+    id: r.id.toString(),
+    salon_id: salon.id,
+    user_id: 'u1',
+    user_name: r.user,
+    user_avatar: r.avatar,
+    rating: r.rating,
+    comment: r.comment,
+    service_name: r.service,
+    created_at: new Date().toISOString()
+  }))
+
+  const openNow = true
   const gallery = salon.gallery_urls?.length ? salon.gallery_urls : [salon.cover_image_url].filter(Boolean)
 
   return (
@@ -75,9 +127,6 @@ export default async function SalonPage({ params }: { params: { slug: string } }
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-6">
         <div className="grid md:grid-cols-3 gap-8">
           <div className="md:col-span-2 space-y-6">
-            {salon.tagline && (
-              <p className="font-cormorant text-xl text-rose-gold italic">{salon.tagline}</p>
-            )}
             <p className="font-dm text-sm text-text-secondary leading-relaxed">{salon.about}</p>
 
             <div className="flex flex-wrap gap-2">
