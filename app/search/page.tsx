@@ -5,7 +5,7 @@ import { Search, SlidersHorizontal, MapPin } from 'lucide-react'
 import SalonCard from '@/components/SalonCard'
 import { PageHeader } from '@/components/AppShell'
 import { CATEGORIES } from '@/lib/types'
-import { mappedSalons } from '@/app/home/page'
+import { mappedSalons } from '@/lib/data'
 import { cn } from '@/lib/cn'
 
 export default function SearchPage() {

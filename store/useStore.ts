@@ -39,6 +39,7 @@ interface AppStore {
   setBookingTime: (t: string) => void
   setBookingPayment: (m: 'card' | 'upi' | 'wallet') => void
   setBookingNotes: (n: string) => void
+  setBooking: (b: BookingState) => void
   clearBooking: () => void
 
   // Favorites
@@ -95,6 +96,7 @@ export const useStore = create<AppStore>()(
       setBookingTime: (time) => set(s => ({ booking: { ...s.booking, time } })),
       setBookingPayment: (paymentMethod) => set(s => ({ booking: { ...s.booking, paymentMethod } })),
       setBookingNotes: (notes) => set(s => ({ booking: { ...s.booking, notes } })),
+      setBooking: (booking) => set({ booking }),
       clearBooking: () => set({ booking: defaultBooking }),
 
       // ── Favorites ────────────────────────────────────────────────────────

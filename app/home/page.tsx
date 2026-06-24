@@ -5,7 +5,7 @@ import { Search, SlidersHorizontal, Sparkles, TrendingUp, MapPin, ChevronRight, 
 import SalonCard, { RecommendedSalonCard } from '@/components/SalonCard'
 import { PageHeader } from '@/components/AppShell'
 import { CATEGORIES } from '@/lib/types'
-import { SALONS, SERVICES } from '@/lib/data'
+import { SALONS, SERVICES, mappedSalons } from '@/lib/data'
 import { slugify } from '@/lib/utils'
 import { formatPrice } from '@/lib/types'
 import { cn } from '@/lib/cn'
@@ -14,28 +14,7 @@ const CATEGORY_ICONS: Record<string, React.ComponentType<{ className?: string }>
   Sparkles, Scissors, Palette, Flower2, Gem, Leaf, Crown,
 }
 
-// Map local SALONS to match the expected Salon type in SalonCard
-export const mappedSalons = SALONS.map(s => ({
-  id: s.id.toString(),
-  name: s.name,
-  slug: slugify(s.name),
-  area: s.area,
-  city: s.city,
-  cover_image_url: s.image,
-  rating: s.rating,
-  review_count: s.reviews,
-  price_range_min: s.priceNum,
-  verified: true,
-  category: [s.category.split(' & ')[0], s.category.split(' & ')[1]].filter(Boolean),
-  about: s.about,
-  distance_km: Number((Math.random() * 5 + 0.5).toFixed(1)),
-  gallery_urls: s.images,
-  amenities: s.amenities,
-  phone: s.phone,
-  address: s.address,
-  hours: s.hours,
-  status: 'approved' as const,
-})) as any[]
+
 
 export default function HomePage() {
   const [activeTag, setActiveTag] = useState('All')

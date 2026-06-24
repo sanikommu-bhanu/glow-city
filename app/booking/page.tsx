@@ -88,6 +88,8 @@ function BookingFlow() {
         stylist: selectedStylist,
         date,
         time,
+        paymentMethod: 'card',
+        notes: ''
       })
       toast.success('Payment successful! Booking confirmed.')
       setLoading(false)

@@ -1,3 +1,5 @@
+import { slugify } from './utils'
+
 export const IMG = (id: string, w = 800) =>
   `https://images.unsplash.com/${id}?w=${w}&q=80&fit=crop`
 
@@ -29,6 +31,28 @@ export const SALONS: Salon[] = [
   { id:5, name:'The Glow Lab', area:'Powai', city:'Mumbai', lat:19.1197, lng:72.9096, rating:4.6, reviews:156, price:'₹1,200', priceNum:1200, category:'Hair & Color', image:IMG('photo-1522337360788-8b13dee7a37e'), images:[IMG('photo-1522337360788-8b13dee7a37e'),IMG('photo-1580618672591-eb180b1a973f')], badge:'New', wait:'No Wait', tags:['Color','Balayage','Cut','Keratin'], about:"Science-backed color artistry. Olaplex, L'Oréal Professionnel, and Wella certified. Custom-formula every visit. Student discounts available.", address:'101 Hiranandani Gardens, Powai, Mumbai 400076', phone:'+91 98200 00005', hours:'Tue–Sun 10AM–7PM', amenities:['Color Bar','Olaplex Certified','Student Discount','Free Consultation'], established:2022, instagram:'@theglowlab.powai' },
   { id:6, name:'Rose Atelier', area:'Andheri West', city:'Mumbai', lat:19.1361, lng:72.8296, rating:4.7, reviews:273, price:'₹2,000', priceNum:2000, category:'Hair & Skin', image:IMG('photo-1580618672591-eb180b1a973f'), images:[IMG('photo-1580618672591-eb180b1a973f'),IMG('photo-1570172619644-dfd03ed5d881')], badge:'Popular', wait:'~15 min', tags:['Hair','Skin','Facial','Threading'], about:'Boutique beauty haven merging skincare science with artistry. Glass-skin facials and precision cuts. Dermatologist-recommended treatments using Dermalogica and The Ordinary.', address:'43 Versova Road, Andheri West, Mumbai 400061', phone:'+91 98200 00006', hours:'Mon–Sat 10AM–8PM', amenities:['Skin Analysis Device','Organic Products','Rewards Card','Dermatologist Tie-up'], established:2019, instagram:'@roseatelier.andheri' },
 ]
+
+export const mappedSalons = SALONS.map(s => ({
+  id: s.id.toString(),
+  name: s.name,
+  slug: slugify(s.name),
+  area: s.area,
+  city: s.city,
+  cover_image_url: s.image,
+  rating: s.rating,
+  review_count: s.reviews,
+  price_range_min: s.priceNum,
+  verified: true,
+  category: [s.category.split(' & ')[0], s.category.split(' & ')[1]].filter(Boolean),
+  about: s.about,
+  distance_km: Number((Math.random() * 5 + 0.5).toFixed(1)),
+  gallery_urls: s.images,
+  amenities: s.amenities,
+  phone: s.phone,
+  address: s.address,
+  hours: s.hours,
+  status: 'approved' as const,
+})) as any[]
 
 export const SERVICES: Service[] = [
   { id:1, name:'Signature Blowout', duration:'45 min', price:1800, category:'Hair', icon:'💇‍♀️', description:'A salon-perfect blowout lasting 3–5 days. Includes hydrating mask and scalp massage with essential oils.', popular:true },
