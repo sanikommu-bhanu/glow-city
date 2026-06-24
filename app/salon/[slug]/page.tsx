@@ -40,6 +40,9 @@ export default async function SalonPage({ params }: { params: { slug: string } }
     price: s.price,
     category: s.category,
     description: s.description,
+    original_price: s.price,
+    image_url: null,
+    is_popular: s.popular || false,
   }))
 
   const stylists = STYLISTS.map(s => ({
@@ -47,10 +50,11 @@ export default async function SalonPage({ params }: { params: { slug: string } }
     salon_id: salon.id,
     name: s.name,
     role: s.role,
-    avatar_url: s.img,
+    image_url: s.img,
     rating: s.rating,
-    review_count: s.reviews,
-    specialties: [s.speciality]
+    experience_years: s.experience || 5,
+    speciality: s.speciality,
+    languages: ['English'],
   }))
 
   const reviews = REVIEWS.map(r => ({
@@ -62,7 +66,10 @@ export default async function SalonPage({ params }: { params: { slug: string } }
     rating: r.rating,
     comment: r.comment,
     service_name: r.service,
-    created_at: new Date().toISOString()
+    created_at: new Date().toISOString(),
+    booking_id: `b${r.id}`,
+    customer_id: `c${r.id}`,
+    profile: { full_name: r.user },
   }))
 
   const openNow = true

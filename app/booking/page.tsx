@@ -11,7 +11,7 @@ import BookingStepBar from '@/components/BookingStepBar'
 import { SALONS, SERVICES, STYLISTS } from '@/lib/data'
 import { slugify } from '@/lib/utils'
 import { useStore } from '@/store/useStore'
-import type { Service, Stylist } from '@/lib/types'
+import type { Service, Stylist } from '@/lib/data'
 
 function BookingFlow() {
   const searchParams = useSearchParams()
@@ -37,36 +37,13 @@ function BookingFlow() {
     const localSalon = SALONS.find(s => slugify(s.name) === salonSlug)
     if (!localSalon) return
 
-    const mappedSalon = {
-      id: localSalon.id.toString(),
-      name: localSalon.name,
-      slug: slugify(localSalon.name),
-      area: localSalon.area,
-      cover_image_url: localSalon.image,
-    }
-    setSalon(mappedSalon)
-
-    const mappedServices = SERVICES.map(s => ({
-      id: s.id.toString(),
-      name: s.name,
-      duration_minutes: parseInt(s.duration) || 60,
-      price: s.price,
-      category: s.category,
-      icon: s.icon,
-    }))
-    setServices(mappedServices as any)
-
-    const mappedStylists = STYLISTS.map(s => ({
-      id: s.id.toString(),
-      name: s.name,
-      role: s.role,
-      avatar_url: s.img,
-    }))
-    setStylists(mappedStylists as any)
+    setSalon(localSalon)
+    setServices(SERVICES)
+    setStylists(STYLISTS)
 
     if (preselectedService) {
-      const svc = mappedServices.find((s) => s.id === preselectedService)
-      if (svc) setSelectedService(svc as any)
+      const svc = SERVICES.find((s) => s.id.toString() === preselectedService)
+      if (svc) setSelectedService(svc)
     }
   }, [salonSlug, preselectedService])
 
@@ -125,9 +102,9 @@ function BookingFlow() {
 
         {salon && (
           <div className="mb-6 p-4 bg-white rounded-[16px] border border-border flex items-center gap-3">
-            {salon.cover_image_url && (
+            {salon.image && (
               <div className="relative w-12 h-12 rounded-xl overflow-hidden">
-                <Image src={salon.cover_image_url} alt="" fill className="object-cover" sizes="48px" />
+                <Image src={salon.image} alt="" fill className="object-cover" sizes="48px" />
               </div>
             )}
             <div>
@@ -151,7 +128,7 @@ function BookingFlow() {
                   <div className="font-dm font-semibold text-sm flex items-center gap-2">
                     <span className="text-xl">{svc.icon}</span> {svc.name}
                   </div>
-                  <div className="font-dm text-xs text-text-muted ml-8">{svc.duration_minutes} min</div>
+                  <div className="font-dm text-xs text-text-muted ml-8">{svc.duration}</div>
                 </div>
                 <span className="font-cormorant font-bold text-rose-gold">{formatPrice(svc.price)}</span>
               </button>
