@@ -1,74 +1,42 @@
-# GlowCity AI
+# GlowCity: The Premium Salon Booking Experience
+**Team Luminex**
 
-India's AI-powered luxury beauty salon marketplace — built for production with Supabase, OpenRouter, and Razorpay.
+---
 
-## Judging criteria map
+## 🌟 Overview
+GlowCity is a modern, AI-powered web application designed to revolutionize the beauty and wellness industry. By bridging the gap between premium salons and clients, GlowCity provides a seamless, aesthetically stunning, and frictionless booking experience.
 
-| Criterion | Where to look |
-|-----------|---------------|
-| **Product Thinking** | Two-sided flows: customer booking → payment → loyalty → review; salon owner dashboard; admin approval; double-booking prevention; 2hr cancellation policy; cold-start labels on recommendations |
-| **UI/UX Design** | Mobile-first responsive layout (375px+), rose-gold/champagne design system, skeleton loaders, Lucide icons, premium typography (Cormorant + DM Sans) |
-| **AI Usage & Innovation** | `/ai` — GlowAI streaming chat grounded in real salon data; Home — "Recommended For You" rail with % match + explainability |
-| **Execution Quality** | Real Supabase Postgres + RLS + pgvector; Razorpay test checkout; seed script with 18 Mumbai salons |
-| **User Experience** | 3-tap onboarding; geolocation "Near You"; booking in under 60s for returning users |
+---
 
-## Quick start
+## 🚀 Key Features
 
-```bash
-npm install
-cp .env.local.example .env.local
-# Fill in Supabase, OpenRouter, Razorpay keys
-```
+### 1. Dynamic Discovery
+- **Rich Vertical Grid:** Browse through top-rated salons, spas, and wellness centers in a beautifully structured masonry grid.
+- **Advanced Filtering:** Filter by categories (Hair, Makeup, Spa, Nails) and real-time statuses like "Open Now" or rating thresholds.
 
-### 1. Supabase setup
+### 2. Intelligent AI Recommendations
+- Provides users with personalized "perfect matches" based on their beauty preferences, favorite stylists, and trending treatments.
+- A built-in "GlowAI" interface acts as a personal beauty concierge to guide users.
 
-1. Create a project at [supabase.com](https://supabase.com)
-2. Enable **pgvector** extension in Database → Extensions
-3. Run `supabase/migrations/001_initial_schema.sql` in SQL Editor
-4. Copy URL + anon key + service role key to `.env.local`
+### 3. End-to-End Booking Flow
+- **Seamless Selection:** Pick specific services, browse available stylists, and secure time slots.
+- **Frictionless Payment:** Mock integration showcasing a smooth checkout process with dynamic pricing, platform fees, and "Glow Points" loyalty discounts.
+- **Instant Confirmation:** Generates a stunning digital receipt with native sharing capabilities and an aesthetic confetti celebration.
 
-### 2. Seed data
+### 4. Premium Aesthetic & UI/UX
+- Designed utilizing modern web principles: glassmorphism, dynamic micro-animations, tailored HSL color palettes (Rose Gold & Champagne), and smooth transitions.
+- Highly responsive, prioritizing a native app-like experience on mobile web.
 
-```bash
-npm run seed
-```
+---
 
-Creates 18 realistic Mumbai salons with services, stylists, and optional embeddings.
+## 💻 Technical Stack
 
-### 3. Run locally
+- **Framework:** Next.js 14 (App Router)
+- **Styling:** Tailwind CSS (with custom utility classes)
+- **State Management:** Zustand (for persistence and local mock data management)
+- **Icons:** Lucide React
 
-```bash
-npm run dev
-```
+---
 
-Open [http://localhost:3000](http://localhost:3000)
-
-### 4. Deploy (Vercel)
-
-Set all env vars from `.env.local.example` in Vercel project settings.
-
-## Environment variables
-
-See `.env.local.example` for full list.
-
-## 2-minute demo script
-
-1. **Splash → Home** — Show responsive layout and AI recommendation rail with match % badges
-2. **Onboarding** — Sign up → 3 taps (area, skin/hair, preferences)
-3. **Search** — Filter by category, open now, distance sorting via geolocation
-4. **Salon detail** — Gallery, services, stylists, reviews from real DB
-5. **Booking** — Pick service → stylist → slot → Razorpay test payment → loyalty points
-6. **GlowAI** (`/ai`) — Ask "best facial for combination skin in Bandra" — watch streamed response with real salon names/prices
-7. **Loyalty** — Points ledger and tier progress
-
-## Tech stack
-
-- Next.js 14 App Router · TypeScript · Tailwind CSS
-- Supabase (Auth, Postgres, RLS, Storage, pgvector)
-- OpenRouter (free chat + embeddings via `lib/ai/client.ts`)
-- Razorpay test mode
-- react-hook-form + zod · Lucide React · sonner toasts
-
-## AI model config
-
-Swap models in one place: `lib/ai/config.ts`
+## 🎯 The Vision
+With GlowCity, Team Luminex aims to prove that digital booking experiences can be just as luxurious and relaxing as the salon visits themselves.
