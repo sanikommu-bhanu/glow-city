@@ -127,7 +127,7 @@ export default function ProfilePage() {
           </div>
         ))}
 
-        <Link href="/auth/login">
+        <Link href="/logout">
           <button className="w-full py-4 rounded-[14px] font-dm font-semibold text-[14px] cursor-pointer mt-2 transition-all hover:opacity-90"
             style={{ border: '1.5px solid #F2D5DC', background: 'white', color: '#C9848E' }}>
             Sign Out

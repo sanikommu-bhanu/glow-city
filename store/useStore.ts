@@ -35,6 +35,7 @@ interface AppStore {
   user: UserProfile
   updateUser: (u: Partial<UserProfile>) => void
   addPoints: (n: number) => void
+  logout: () => void
 
   // Booking
   booking: BookingState
@@ -76,16 +77,18 @@ const defaultBooking: BookingState = {
   date: '', time: '', paymentMethod: 'card', notes: '',
 }
 
+const defaultUser: UserProfile = {
+  name: 'Priya Singh', email: 'priya.singh@email.com',
+  phone: '+91 98765 43210', avatar: 'P',
+  points: 2450, tier: 'Gold',
+  totalBookings: 12, totalSaved: 1240,
+}
+
 export const useStore = create<AppStore>()(
   persist(
     (set, get) => ({
       // ── User ────────────────────────────────────────────────────────────
-      user: {
-        name: 'Priya Singh', email: 'priya.singh@email.com',
-        phone: '+91 98765 43210', avatar: 'P',
-        points: 2450, tier: 'Gold',
-        totalBookings: 12, totalSaved: 1240,
-      },
+      user: defaultUser,
       updateUser: (u) => set(s => ({ user: { ...s.user, ...u } })),
       addPoints: (n) => set(s => ({
         user: {
@@ -95,6 +98,7 @@ export const useStore = create<AppStore>()(
             : s.user.points + n >= 2000 ? 'Gold' : 'Silver',
         },
       })),
+      logout: () => set({ user: defaultUser }),
 
       // ── Booking ──────────────────────────────────────────────────────────
       booking: defaultBooking,
