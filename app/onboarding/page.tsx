@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
 import { MapPin, Sparkles, Check } from 'lucide-react'
 import { completeOnboarding } from '@/lib/actions/profile'
 import { Button } from '@/components/ui/Button'
@@ -21,28 +21,28 @@ export default function OnboardingPage() {
   const [hairType, setHairType] = useState('')
   const [concerns, setConcerns] = useState<string[]>([])
   const [categories, setCategories] = useState<string[]>([])
-  const [loading, setLoading] = useState(false)
+  const [isPending, startTransition] = useTransition()
   const [error, setError] = useState('')
 
   const toggle = (arr: string[], val: string, setter: (v: string[]) => void) => {
     setter(arr.includes(val) ? arr.filter((x) => x !== val) : [...arr, val])
   }
 
-  async function handleComplete() {
-    setLoading(true)
-    setError('')
-    const fd = new FormData()
-    fd.set('city', city)
-    fd.set('area', area)
-    fd.set('skinType', skinType)
-    fd.set('hairType', hairType)
-    concerns.forEach((c) => fd.append('concerns', c))
-    categories.forEach((c) => fd.append('categories', c))
-    const result = await completeOnboarding(fd)
-    if (result?.error) {
-      setError(result.error)
-      setLoading(false)
-    }
+  function handleComplete() {
+    startTransition(async () => {
+      setError('')
+      const fd = new FormData()
+      fd.set('city', city)
+      fd.set('area', area)
+      fd.set('skinType', skinType)
+      fd.set('hairType', hairType)
+      concerns.forEach((c) => fd.append('concerns', c))
+      categories.forEach((c) => fd.append('categories', c))
+      const result = await completeOnboarding(fd)
+      if (result?.error) {
+        setError(result.error)
+      }
+    })
   }
 
   const canNext =
@@ -166,7 +166,7 @@ export default function OnboardingPage() {
               Continue
             </Button>
           ) : (
-            <Button className="flex-1" disabled={!canNext} loading={loading} onClick={handleComplete}>
+            <Button className="flex-1" disabled={!canNext} loading={isPending} onClick={handleComplete}>
               Start Exploring
             </Button>
           )}
