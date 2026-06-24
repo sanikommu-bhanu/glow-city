@@ -2,12 +2,12 @@
 
 import { redirect } from 'next/navigation'
 
-export async function signUp(formData: FormData) {
+export async function signUp(formData: FormData): Promise<{error?: string}> {
   // Mock signup
   redirect('/onboarding')
 }
 
-export async function signIn(formData: FormData) {
+export async function signIn(formData: FormData): Promise<{error?: string}> {
   // Mock signin
   const redirectTo = (formData.get('redirect') as string) || '/home'
   redirect(redirectTo)
