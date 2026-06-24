@@ -1,5 +1,6 @@
 'use client'
 import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { MapPin, Sparkles, Check } from 'lucide-react'
 import { completeOnboarding } from '@/lib/actions/profile'
 import { Button } from '@/components/ui/Button'
@@ -14,6 +15,7 @@ const MUMBAI_AREAS = [
 const STEPS = ['Location', 'Skin & Hair', 'Preferences']
 
 export default function OnboardingPage() {
+  const router = useRouter()
   const [step, setStep] = useState(0)
   const [city] = useState('Mumbai')
   const [area, setArea] = useState('')
@@ -29,7 +31,7 @@ export default function OnboardingPage() {
   }
 
   function handleComplete() {
-    startTransition(async () => {
+    startTransition(() => {
       setError('')
       const fd = new FormData()
       fd.set('city', city)
@@ -38,10 +40,12 @@ export default function OnboardingPage() {
       fd.set('hairType', hairType)
       concerns.forEach((c) => fd.append('concerns', c))
       categories.forEach((c) => fd.append('categories', c))
-      const result = await completeOnboarding(fd)
-      if (result?.error) {
-        setError(result.error)
-      }
+      
+      // Optimistic navigation for instant UI feedback
+      router.push('/home')
+      
+      // Fire server action in background without awaiting
+      completeOnboarding(fd)
     })
   }
 
