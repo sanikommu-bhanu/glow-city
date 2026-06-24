@@ -2,13 +2,14 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Heart, MessageCircle } from 'lucide-react'
-import { SERVICES, STYLISTS, SALON_GALLERY, type GalleryItem } from '@/lib/data'
+import { Heart, MessageCircle, Play } from 'lucide-react'
+import { SERVICES, STYLISTS, SALON_GALLERY, type GalleryItem, mappedSalons } from '@/lib/data'
+import SalonCard from '@/components/SalonCard'
 import { useStore } from '@/store/useStore'
 import GalleryModal from '@/components/GalleryModal'
 import { cn } from '@/lib/cn'
 
-const TABS = ['Gallery', 'Services', 'Stylists', 'Trending']
+const TABS = ['Gallery', 'Services', 'Stylists', 'Salons', 'Trending']
 
 export default function DiscoverPage() {
   const [tab, setTab] = useState('Gallery')
@@ -60,14 +61,34 @@ export default function DiscoverPage() {
                     >
                       {/* Random aspect ratio for masonry look */}
                       <div className={cn("relative w-full", item.id % 3 === 0 ? "aspect-[3/4]" : "aspect-square")}>
-                        <Image 
-                          src={item.imageUrl} 
-                          alt={item.title}
-                          fill
-                          className="object-cover group-hover:scale-105 transition-transform duration-500"
-                          sizes="(max-width: 768px) 50vw, 300px"
-                        />
+                        {item.type === 'video' && item.videoUrl ? (
+                          <video
+                            src={item.videoUrl}
+                            poster={item.imageUrl}
+                            autoPlay
+                            loop
+                            muted
+                            playsInline
+                            className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
+                          />
+                        ) : (
+                          <Image 
+                            src={item.imageUrl} 
+                            alt={item.title}
+                            fill
+                            className="object-cover group-hover:scale-105 transition-transform duration-500"
+                            sizes="(max-width: 768px) 50vw, 300px"
+                          />
+                        )}
                         <div className="absolute inset-0 bg-gradient-to-t from-luxury-black/60 via-transparent to-transparent opacity-80" />
+                        
+                        {item.type === 'video' && (
+                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <div className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center border border-white/20">
+                              <Play className="w-4 h-4 text-white fill-white ml-0.5" />
+                            </div>
+                          </div>
+                        )}
                         
                         <div className="absolute bottom-3 left-3 right-3 text-white">
                           <p className="font-cormorant font-semibold text-lg leading-tight line-clamp-1">{item.title}</p>
@@ -156,6 +177,17 @@ export default function DiscoverPage() {
               </Link>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Salons Tab */}
+      {tab === 'Salons' && (
+        <div className="px-5 pt-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {mappedSalons.map((s) => (
+              <SalonCard key={s.id} salon={s} wide />
+            ))}
+          </div>
         </div>
       )}
 

@@ -115,6 +115,8 @@ export interface GalleryItem {
   description: string;
   price: number;
   tags: string[];
+  type?: 'image' | 'video';
+  videoUrl?: string;
 }
 
 export interface Comment {
@@ -138,5 +140,35 @@ export const SALON_GALLERY: GalleryItem[] = [
   { id: 10, imageUrl: IMG('photo-1521590832167-7bcbfaa6381f', 600), title: 'Editorial Hair Styling', salonId: 4, salonName: 'Maison de Belle', salonSlug: 'maison-de-belle', serviceId: 1, serviceCategory: 'Hair', description: 'Avant-garde styling for shoots and special events.', price: 4500, tags: ['#editorialhair', '#styling'] },
   { id: 11, imageUrl: IMG('photo-1544161515-4ab6ce6db874', 600), title: 'Aromatherapy Escape', salonId: 2, salonName: 'Aurore Spa & Beauty', salonSlug: 'aurore-spa', serviceId: 9, serviceCategory: 'Spa', description: 'Relaxing massage with custom-blended essential oils.', price: 4500, tags: ['#aromatherapy', '#relaxation'] },
   { id: 12, imageUrl: IMG('photo-1512496015851-a90fb38ba796', 600), title: 'Party Glam Makeup', salonId: 4, salonName: 'Maison de Belle', salonSlug: 'maison-de-belle', serviceId: 3, serviceCategory: 'Makeup', description: 'Bold and beautiful makeup looks for your next big night out.', price: 6000, tags: ['#partyglam', '#makeup'] },
+  { 
+    id: 13, 
+    type: 'video', 
+    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-woman-getting-her-hair-done-in-a-salon-39828-large.mp4', 
+    imageUrl: IMG('photo-1560066984-138dadb4c035', 600), 
+    title: 'Hair Styling Magic', 
+    salonId: 1, 
+    salonName: 'Lumière Studio', 
+    salonSlug: 'lumiere-studio', 
+    serviceId: 1, 
+    serviceCategory: 'Hair', 
+    description: 'Watch the magic happen.', 
+    price: 1800, 
+    tags: ['#hairstyling', '#salon'] 
+  },
+  { 
+    id: 14, 
+    type: 'video', 
+    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-cosmetician-massaging-the-face-of-a-woman-39832-large.mp4', 
+    imageUrl: IMG('photo-1570172619644-dfd03ed5d881', 600), 
+    title: 'Relaxing Facial', 
+    salonId: 6, 
+    salonName: 'Rose Atelier', 
+    salonSlug: 'rose-atelier', 
+    serviceId: 10, 
+    serviceCategory: 'Skin', 
+    description: 'Experience ultimate relaxation.', 
+    price: 2800, 
+    tags: ['#facial', '#relax'] 
+  }
 ];
 

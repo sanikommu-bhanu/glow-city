@@ -30,7 +30,7 @@ function BookingFlow() {
   const [slots, setSlots] = useState<string[]>([])
   const [loyaltyRedeem, setLoyaltyRedeem] = useState(0)
   const [loading, setLoading] = useState(false)
-  const { user, setBooking } = useStore()
+  const { user, setBooking, addAppointment } = useStore()
 
   useEffect(() => {
     if (!salonSlug) return
@@ -59,14 +59,21 @@ function BookingFlow() {
 
     // Simulate payment & booking logic locally
     setTimeout(() => {
-      setBooking({
+      const bookingData = {
         salon,
         service: selectedService,
         stylist: selectedStylist,
         date,
         time,
-        paymentMethod: 'card',
+        paymentMethod: 'card' as const,
         notes: ''
+      }
+      setBooking(bookingData)
+      addAppointment({
+        ...bookingData,
+        id: `BKG${Math.floor(10000 + Math.random() * 90000)}`,
+        status: 'upcoming',
+        createdAt: Date.now()
       })
       toast.success('Payment successful! Booking confirmed.')
       setLoading(false)

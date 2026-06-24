@@ -3,7 +3,8 @@ import Link from 'next/link'
 import { useStore } from '@/store/useStore'
 
 export default function ProfilePage() {
-  const { user } = useStore()
+  const { user, appointments } = useStore()
+  const upcomingCount = appointments?.filter(a => a.status === 'upcoming').length || 0
 
   const TIER_COLORS = { Silver: '#94A3B8', Gold: '#D4AF7F', Platinum: '#E5E7EB' }
   const tierColor = TIER_COLORS[user.tier] || '#D4AF7F'
@@ -12,7 +13,7 @@ export default function ProfilePage() {
     {
       label: 'My Activity',
       items: [
-        { i: '📅', l: 'My Bookings', href: '/booking/confirm', badge: '1 upcoming' },
+        { i: '📅', l: 'My Bookings', href: '/bookings', badge: upcomingCount > 0 ? `${upcomingCount} upcoming` : null },
         { i: '❤️', l: 'Favourites', href: '/favorites' },
         { i: '⭐', l: 'My Reviews', href: '/reviews' },
       ],

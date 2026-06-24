@@ -1,9 +1,10 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react'
 import { signIn, signInWithGoogle } from '@/lib/actions/auth'
+import { useStore } from '@/store/useStore'
 import { Button } from '@/components/ui/Button'
 
 export default function LoginForm() {
@@ -13,6 +14,9 @@ export default function LoginForm() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
+  const router = useRouter()
+  const { updateUser } = useStore()
+
   async function handleSubmit(formData: FormData) {
     setLoading(true)
     setError('')
@@ -21,6 +25,12 @@ export default function LoginForm() {
     if (result?.error) {
       setError(result.error)
       setLoading(false)
+    } else if (result?.redirect) {
+      updateUser({
+        email: formData.get('email') as string,
+        name: formData.get('email')?.toString().split('@')[0] || 'User', // Guess name from email
+      })
+      router.push(result.redirect)
     }
   }
 

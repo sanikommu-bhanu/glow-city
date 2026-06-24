@@ -13,6 +13,12 @@ export interface BookingState {
   notes: string
 }
 
+export interface Appointment extends BookingState {
+  id: string
+  status: 'upcoming' | 'completed' | 'cancelled'
+  createdAt: number
+}
+
 export interface UserProfile {
   name: string
   email: string
@@ -41,6 +47,9 @@ interface AppStore {
   setBookingNotes: (n: string) => void
   setBooking: (b: BookingState) => void
   clearBooking: () => void
+
+  appointments: Appointment[]
+  addAppointment: (a: Appointment) => void
 
   // Favorites
   favorites: number[]
@@ -98,6 +107,9 @@ export const useStore = create<AppStore>()(
       setBookingNotes: (notes) => set(s => ({ booking: { ...s.booking, notes } })),
       setBooking: (booking) => set({ booking }),
       clearBooking: () => set({ booking: defaultBooking }),
+
+      appointments: [],
+      addAppointment: (a) => set(s => ({ appointments: [...s.appointments, a] })),
 
       // ── Favorites ────────────────────────────────────────────────────────
       favorites: [1, 2],
@@ -160,6 +172,7 @@ export const useStore = create<AppStore>()(
         chatHistory: s.chatHistory,
         likes: s.likes,
         comments: s.comments,
+        appointments: s.appointments,
       }),
     }
   )

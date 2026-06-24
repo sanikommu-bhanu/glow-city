@@ -1,113 +1,60 @@
 import { NextRequest } from 'next/server'
-import { createClient, createServiceClient } from '@/lib/supabase/server'
-import { createChatCompletion } from '@/lib/ai/client'
-import { AI_CONFIG } from '@/lib/ai/config'
+import { SALONS, SERVICES } from '@/lib/data'
 
 export async function POST(request: NextRequest) {
-  const { messages, conversationId } = await request.json()
-
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 })
-  }
-
-  const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single()
-
-  const city = profile?.city ?? 'Mumbai'
-  const { data: salons } = await supabase
-    .from('salons')
-    .select('id, name, slug, area, rating, price_range_min, price_range_max, category, tagline')
-    .eq('status', 'approved')
-    .eq('city', city)
-    .limit(12)
-
-  const salonIds = (salons ?? []).map((s) => s.id)
-  const { data: services } = salonIds.length
-    ? await supabase.from('services').select('id, salon_id, name, price, category, duration_minutes, image_url').in('salon_id', salonIds).limit(30)
-    : { data: [] }
-
-  const salonContext = (salons ?? []).map((s) => {
-    const salonServices = (services ?? []).filter((sv) => sv.salon_id === s.id)
-    return `${s.name} (${s.area}) — ${s.tagline ?? ''}. Categories: ${(s.category ?? []).join(', ')}. Rating: ${s.rating}. Price from ₹${s.price_range_min}. Services: ${salonServices.map((sv) => `${sv.name} ₹${sv.price}`).join(', ')}`
-  }).join('\n')
-
-  const systemPrompt = `You are GlowAI, the personal beauty concierge for GlowCity AI — India's premium salon marketplace.
-
-USER PROFILE:
-- Name: ${profile?.full_name ?? 'Guest'}
-- City: ${profile?.city ?? 'Mumbai'}, Area: ${profile?.area ?? 'Not set'}
-- Skin type: ${profile?.skin_type ?? 'Not specified'}
-- Hair type: ${profile?.hair_type ?? 'Not specified'}
-- Concerns: ${(profile?.concerns ?? []).join(', ') || 'None specified'}
-- Loyalty points: ${profile?.loyalty_points ?? 0}
-
-AVAILABLE SALONS AND SERVICES (ONLY recommend from this list):
-${salonContext || 'No salons available in this city yet.'}
-
-RULES:
-1. Only recommend salons and services from the provided context. Never invent names, prices, or availability.
-2. Be warm, concise, and premium in tone — like a luxury salon concierge.
-3. When the user wants to book, respond with a clear recommendation and include a booking tag in this exact format on its own line:
-   [BOOK:{service_id}:{salon_slug}]
-4. Reference actual prices from the context.
-5. Keep responses under 150 words unless explaining a treatment.`
-
   try {
-    const stream = await createChatCompletion(
-      [
-        { role: 'system', content: systemPrompt },
-        ...messages.slice(-8).map((m: { role: string; content: string }) => ({
-          role: m.role as 'user' | 'assistant',
-          content: m.content,
-        })),
-      ],
-      true
-    )
+    const { messages } = await request.json()
+    const lastMessage = messages[messages.length - 1]?.content?.toLowerCase() || ''
+
+    let responseText = "I'm sorry, I couldn't quite catch that. Could you ask me about finding a salon, booking a service, or getting a recommendation?"
+    let bookingTag = ''
+
+    // Extremely simple keyword matching for the mock AI
+    if (lastMessage.includes('hair') || lastMessage.includes('blowout') || lastMessage.includes('color')) {
+      const salon = SALONS.find(s => s.name === 'Lumière Studio')!
+      const service = SERVICES.find(s => s.name === 'Signature Blowout')!
+      responseText = `For hair services, I highly recommend **${salon.name}** in ${salon.area}. They are top-rated (⭐ ${salon.rating}) and use premium products like Wella and Olaplex. Their ${service.name} is fantastic at ₹${service.price}. Would you like me to book this for you?`
+      bookingTag = `\n\n[BOOK:${service.id}:lumiere-studio]`
+    } 
+    else if (lastMessage.includes('spa') || lastMessage.includes('massage') || lastMessage.includes('relax')) {
+      const salon = SALONS.find(s => s.name === 'Aurore Spa & Beauty')!
+      const service = SERVICES.find(s => s.name === 'Deep Tissue Massage')!
+      responseText = `If you're looking to relax, **${salon.name}** in ${salon.area} is a sanctuary of calm. They offer an incredible ${service.name} for ₹${service.price} using organic doTERRA essential oils to completely reset your nervous system.`
+      bookingTag = `\n\n[BOOK:${service.id}:aurore-spa-beauty]`
+    }
+    else if (lastMessage.includes('facial') || lastMessage.includes('skin')) {
+      const salon = SALONS.find(s => s.name === 'Rose Atelier')!
+      const service = SERVICES.find(s => s.name === 'Glass Skin Facial')!
+      responseText = `For skincare, you absolutely must visit **${salon.name}**. They specialize in a Korean-inspired ${service.name} (₹${service.price}) that will give you a luminous, mirror-like complexion. It includes essence layering and LED light therapy.`
+      bookingTag = `\n\n[BOOK:${service.id}:rose-atelier]`
+    }
+    else if (lastMessage.includes('nail') || lastMessage.includes('manicure')) {
+      const salon = SALONS.find(s => s.name === 'Velvet & Gold')!
+      const service = SERVICES.find(s => s.name === 'Nail Art Full Set')!
+      responseText = `For the best nails in Mumbai, check out **${salon.name}** in ${salon.area}. They offer stunning custom gel nail art and extensions. The ${service.name} is ₹${service.price} and you can choose from over 500 catalogue designs.`
+      bookingTag = `\n\n[BOOK:${service.id}:velvet-gold]`
+    }
+    else if (lastMessage.includes('point') || lastMessage.includes('loyalty') || lastMessage.includes('reward')) {
+      responseText = `You currently have **2,450 Glow Points**! You are a Gold tier member, which means you have about ₹245 in cashback available to use on your next booking. You are only 2,550 points away from Platinum status! 💎`
+    }
+    else if (lastMessage.includes('hi') || lastMessage.includes('hello') || lastMessage.includes('hey')) {
+      responseText = `Hello! 👋 I'm GlowAI. I can help you find the perfect salon, recommend services based on your skin or hair type, or check your loyalty points. What are you looking for today?`
+    }
+
+    const fullResponse = responseText + bookingTag
 
     const encoder = new TextEncoder()
-    let fullResponse = ''
-
     const readable = new ReadableStream({
       async start(controller) {
-        try {
-          for await (const chunk of stream as AsyncIterable<{ choices: { delta: { content?: string } }[] }>) {
-            const text = chunk.choices[0]?.delta?.content ?? ''
-            if (text) {
-              fullResponse += text
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text })}\n\n`))
-            }
-          }
-
-          // Persist conversation
-          const updatedMessages = [
-            ...messages,
-            { role: 'assistant', content: fullResponse, timestamp: Date.now() },
-          ]
-
-          if (conversationId) {
-            await supabase
-              .from('ai_conversations')
-              .update({ messages: updatedMessages, updated_at: new Date().toISOString() })
-              .eq('id', conversationId)
-          } else if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
-            const serviceClient = await createServiceClient()
-            await serviceClient.from('ai_conversations').insert({
-              customer_id: user.id,
-              messages: updatedMessages,
-            })
-          }
-
-          controller.enqueue(encoder.encode('data: [DONE]\n\n'))
-          controller.close()
-        } catch (err) {
-          const fallback = AI_CONFIG.rateLimitFallback
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text: fallback, fallback: true })}\n\n`))
-          controller.enqueue(encoder.encode('data: [DONE]\n\n'))
-          controller.close()
+        // Stream the response out word by word to look like a real LLM
+        const words = fullResponse.split(' ')
+        for (const word of words) {
+          await new Promise(r => setTimeout(r, 40 + Math.random() * 40)) // Random delay 40-80ms
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text: word + ' ' })}\n\n`))
         }
-      },
+        controller.enqueue(encoder.encode('data: [DONE]\n\n'))
+        controller.close()
+      }
     })
 
     return new Response(readable, {
@@ -117,10 +64,8 @@ RULES:
         Connection: 'keep-alive',
       },
     })
-  } catch {
-    return new Response(
-      JSON.stringify({ error: AI_CONFIG.rateLimitFallback }),
-      { status: 429 }
-    )
+  } catch (error) {
+    console.error('AI Mock Error:', error)
+    return new Response(JSON.stringify({ error: 'Failed to process AI chat.' }), { status: 500 })
   }
 }

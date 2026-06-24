@@ -1,13 +1,18 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Mail, Lock, User } from 'lucide-react'
 import { signUp } from '@/lib/actions/auth'
+import { useStore } from '@/store/useStore'
 import { Button } from '@/components/ui/Button'
 
 export default function SignUpPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+
+  const router = useRouter()
+  const { updateUser } = useStore()
 
   async function handleSubmit(formData: FormData) {
     setLoading(true)
@@ -16,6 +21,12 @@ export default function SignUpPage() {
     if (result?.error) {
       setError(result.error)
       setLoading(false)
+    } else if (result?.redirect) {
+      updateUser({
+        name: formData.get('fullName') as string,
+        email: formData.get('email') as string,
+      })
+      router.push(result.redirect)
     }
   }
 
