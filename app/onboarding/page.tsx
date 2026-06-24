@@ -1,6 +1,5 @@
 'use client'
-import { useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 import { MapPin, Sparkles, Check } from 'lucide-react'
 import { completeOnboarding } from '@/lib/actions/profile'
 import { Button } from '@/components/ui/Button'
@@ -12,47 +11,41 @@ const MUMBAI_AREAS = [
   'Khar', 'Lower Parel', 'Bandra East', 'Versova',
 ]
 
-const STEPS = ['Location', 'Skin & Hair', 'Preferences']
+const STEPS = ['Location', 'Skin & Hair']
 
 export default function OnboardingPage() {
-  const router = useRouter()
   const [step, setStep] = useState(0)
   const [city] = useState('Mumbai')
   const [area, setArea] = useState('')
   const [skinType, setSkinType] = useState('')
   const [hairType, setHairType] = useState('')
   const [concerns, setConcerns] = useState<string[]>([])
-  const [categories, setCategories] = useState<string[]>([])
-  const [isPending, startTransition] = useTransition()
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
   const toggle = (arr: string[], val: string, setter: (v: string[]) => void) => {
     setter(arr.includes(val) ? arr.filter((x) => x !== val) : [...arr, val])
   }
 
-  function handleComplete() {
-    startTransition(() => {
-      setError('')
-      const fd = new FormData()
-      fd.set('city', city)
-      fd.set('area', area)
-      fd.set('skinType', skinType)
-      fd.set('hairType', hairType)
-      concerns.forEach((c) => fd.append('concerns', c))
-      categories.forEach((c) => fd.append('categories', c))
-      
-      // Optimistic navigation for instant UI feedback
-      router.push('/home')
-      
-      // Fire server action in background without awaiting
-      completeOnboarding(fd)
-    })
+  async function handleComplete() {
+    setLoading(true)
+    setError('')
+    const fd = new FormData()
+    fd.set('city', city)
+    fd.set('area', area)
+    fd.set('skinType', skinType)
+    fd.set('hairType', hairType)
+    concerns.forEach((c) => fd.append('concerns', c))
+    const result = await completeOnboarding(fd)
+    if (result?.error) {
+      setError(result.error)
+      setLoading(false)
+    }
   }
 
   const canNext =
     step === 0 ? !!area :
-    step === 1 ? !!skinType && !!hairType :
-    categories.length > 0
+    !!skinType && !!hairType
 
   return (
     <div className="min-h-screen hero-gradient flex flex-col">
@@ -132,31 +125,7 @@ export default function OnboardingPage() {
             </div>
           )}
 
-          {step === 2 && (
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <Sparkles className="w-5 h-5 text-champagne" />
-                <h2 className="font-cormorant text-2xl font-semibold">What do you love?</h2>
-              </div>
-              <p className="font-dm text-sm text-text-muted mb-4">Powers your AI recommendations</p>
-              <div className="grid grid-cols-2 gap-2">
-                {CATEGORIES.filter((c) => c.name !== 'All').map((c) => (
-                  <button
-                    key={c.name}
-                    type="button"
-                    onClick={() => toggle(categories, c.name, setCategories)}
-                    className={cn(
-                      'px-4 py-4 rounded-xl border text-sm font-dm font-medium flex items-center justify-between',
-                      categories.includes(c.name) ? 'border-rose-gold bg-rose-gold/8 text-rose-gold' : 'border-border'
-                    )}
-                  >
-                    {c.name}
-                    {categories.includes(c.name) && <Check className="w-4 h-4" />}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+
         </div>
 
         <div className="mt-6 flex gap-3">
@@ -165,12 +134,12 @@ export default function OnboardingPage() {
               Back
             </Button>
           )}
-          {step < 2 ? (
+          {step < 1 ? (
             <Button className="flex-1" disabled={!canNext} onClick={() => setStep(step + 1)}>
               Continue
             </Button>
           ) : (
-            <Button className="flex-1" disabled={!canNext} loading={isPending} onClick={handleComplete}>
+            <Button className="flex-1" disabled={!canNext} loading={loading} onClick={handleComplete}>
               Start Exploring
             </Button>
           )}
